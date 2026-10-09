@@ -6,7 +6,13 @@ import '../models/category_model.dart';
 import 'database_helper.dart';
 
 class SyncService {
-  static const String baseUrl = 'http://localhost:8080';
+  /// Sync server address. Override at build/run time, e.g. for the Android
+  /// emulator (where localhost is the emulator itself):
+  /// flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:8080',
+  );
 
   Future<void> syncTasks() async {
     try {
