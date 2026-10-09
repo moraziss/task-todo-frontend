@@ -308,6 +308,12 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
     _selectedCatId = provider.selectedCategoryId == 'all' ? provider.categories.firstOrNull?.id : provider.selectedCategoryId;
   }
 
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
+
   Future<void> _pickDeadline() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
