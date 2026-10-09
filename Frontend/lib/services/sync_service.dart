@@ -25,10 +25,6 @@ class SyncService {
 
       final categoriesJson = localCategories.map((c) => c.toMap()).toList();
 
-      final payload = {
-        'tasks': tasksJson,
-      };
-
       // 2. Отправляем на сервер
 
       final response = await http.post(
