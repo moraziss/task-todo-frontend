@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 import '../models/task_model.dart';
 import '../models/category_model.dart';
@@ -52,12 +53,12 @@ class SyncService {
           }
         }
         
-        print("Синхронизация завершена успешно");
+        debugPrint("Синхронизация завершена успешно");
       } else {
-        print("Ошибка сервера: ${response.statusCode}");
+        debugPrint("Ошибка сервера: ${response.statusCode}");
       }
     } catch (e) {
-      print("Ошибка синхронизации: $e");
+      debugPrint("Ошибка синхронизации: $e");
     }
   }
 }

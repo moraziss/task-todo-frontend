@@ -184,7 +184,7 @@ class TaskProvider with ChangeNotifier {
   }
 
   Future<void> attachFile(String taskId) async {
-    print("Attaching file to task: $taskId");
+    debugPrint("Attaching file to task: $taskId");
     notifyListeners();
   }
 }
