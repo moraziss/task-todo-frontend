@@ -308,6 +308,17 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
     _selectedCatId = provider.selectedCategoryId == 'all' ? provider.categories.firstOrNull?.id : provider.selectedCategoryId;
   }
 
+  Future<void> _pickDeadline() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _deadline ?? now,
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: DateTime(now.year + 5),
+    );
+    if (picked != null) setState(() => _deadline = picked);
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TaskProvider>();
@@ -335,10 +346,27 @@ class _AddTaskSheetState extends State<_AddTaskSheet> {
               onSelected: (s) => setState(() => _selectedCatId = s ? c.id : null),
             )).toList(),
           ),
+          const SizedBox(height: 16),
+          const Text('Deadline', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          Row(
+            children: [
+              OutlinedButton.icon(
+                icon: const Icon(Icons.event, size: 18),
+                label: Text(_deadline == null ? 'No deadline' : DateFormat('MMM d, y').format(_deadline!)),
+                onPressed: _pickDeadline,
+              ),
+              if (_deadline != null)
+                IconButton(
+                  tooltip: 'Clear deadline',
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: () => setState(() => _deadline = null),
+                ),
+            ],
+          ),
           const SizedBox(height: 24),
           FilledButton(
             onPressed: () {
-              provider.addTaskDirect(title: _titleController.text, priority: _priority, categoryId: _selectedCatId);
+              provider.addTaskDirect(title: _titleController.text, priority: _priority, categoryId: _selectedCatId, deadline: _deadline);
               Navigator.pop(context);
             },
             child: const Text('Create Task'),
