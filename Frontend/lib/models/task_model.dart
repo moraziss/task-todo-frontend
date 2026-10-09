@@ -33,7 +33,7 @@ class Task {
 
   // Превращаем из Map (который отдает SQLite/JSON) в объект Dart (устойчиво к отсутствующим полям)
   factory Task.fromMap(Map<String, dynamic> map) {
-    String? parseString(dynamic v) => v == null ? null : v.toString();
+    String? parseString(dynamic v) => v?.toString();
     bool parseBool(dynamic v) {
       if (v is bool) return v;
       if (v is num) return v != 0;
