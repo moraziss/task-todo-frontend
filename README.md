@@ -1,83 +1,78 @@
-# task_todo
+# task-todo-frontend
 
-A new Flutter project.
+An offline-first to-do app built with Flutter. Tasks live in a local SQLite database, so the app works without a connection, and are synchronised with a Go + PostgreSQL backend when one is available.
 
-## Getting Started
+> Backend: [moraziss/task-todo-backend](https://github.com/moraziss/task-todo-backend)
 
-This project is a starting point for a Flutter application.
+## Features
 
-A few resources to get you started if this is your first Flutter project:
+- **Offline-first storage** — everything is read from and written to SQLite (`sqflite`; `sqflite_common_ffi` on Windows, macOS and Linux).
+- **Categories** — tasks belong to a category with its own colour; deleting a category does not delete its tasks.
+- **Subtasks with progress** — open a task to add subtasks and see a completion bar.
+- **Smart ordering** — active tasks first, pinned on top, overdue deadlines raised, then by priority (high → low). Completed tasks sink to the bottom.
+- **Deadlines** — set when creating a task; overdue tasks are highlighted.
+- **Swipe gestures** — swipe right to pin / unpin, swipe left to delete.
+- **Soft delete** — deleted tasks are only flagged, so the deletion can be synchronised to the server before the row is removed.
+- **Sync** — `POST /sync` sends local tasks and categories and merges the server's response back.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+File attachments are not implemented yet: the button on the task screen is a placeholder.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Tech stack
 
+| Area | Choice |
+| --- | --- |
+| UI | Flutter (Material 3) |
+| State management | `provider` (`ChangeNotifier`) |
+| Local storage | `sqflite` / `sqflite_common_ffi` |
+| Networking | `http` |
+| Backend | Go + PostgreSQL (separate repository) |
 
-## Server (Go) and PostgreSQL
+## Project layout
 
-- Configure DSN via env var:
-  - Windows (PowerShell): setx POSTGRES_DSN "postgres://postgres:password@localhost:5432/todo_db?sslmode=disable"
-  - macOS/Linux (bash): export POSTGRES_DSN="postgres://postgres:password@localhost:5432/todo_db?sslmode=disable"
-- Run server: go run ./server/cmd/server
-- On startup the server runs migrations automatically.
+```
+Frontend/
+├── lib/
+│   ├── main.dart                 # app entry point, database bootstrap
+│   ├── models/                   # Task, Category (Map <-> object)
+│   ├── screens/                  # main list, task details
+│   └── services/
+│       ├── database_helper.dart  # SQLite access
+│       ├── sync_service.dart     # HTTP sync with the backend
+│       └── task_provider.dart    # state, sorting, progress
+├── test/                         # model unit tests
+└── analysis_options.yaml         # flutter_lints
+docs/
+└── product-spec.ru.md            # product specification (Russian)
+```
 
-### If you see: relation "tasks" does not exist during migration
-This happens when the database is empty and an ALTER TABLE tries to modify a non‑existing table. Fixed in code by bootstrapping base tables first. If you still hit it (e.g., old binary or lack of privileges), run the bootstrap SQL once, then start the server:
+## Getting started
 
-1) Open psql connected to your database (todo_db), then execute:
+Requirements: Flutter (stable channel) with Dart 3.
 
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+```bash
+cd Frontend
+flutter pub get
+flutter run
+```
 
-CREATE TABLE IF NOT EXISTS categories (
-  id UUID PRIMARY KEY,
-  name TEXT UNIQUE NOT NULL,
-  color VARCHAR(16) NOT NULL DEFAULT '#9e9e9e',
-  is_default BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+The app expects the sync server at `http://localhost:8080` by default. Point it somewhere else with `--dart-define`; for example, the Android emulator reaches the host machine at `10.0.2.2`:
 
-CREATE TABLE IF NOT EXISTS tasks (
-  id UUID PRIMARY KEY,
-  parent_id UUID NULL REFERENCES tasks(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  priority VARCHAR(20) DEFAULT 'medium',
-  category VARCHAR(50),
-  category_id UUID NULL REFERENCES categories(id) ON DELETE SET NULL,
-  is_completed BOOLEAN NOT NULL DEFAULT FALSE,
-  is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
-  is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
-  deadline TIMESTAMPTZ NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+```bash
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080
+```
 
-CREATE TABLE IF NOT EXISTS attachments (
-  id UUID PRIMARY KEY,
-  task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-  file_name TEXT NOT NULL,
-  file_path TEXT NOT NULL,
-  file_size BIGINT NOT NULL,
-  uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+Without a running server the app still works; sync simply logs an error and local data is untouched.
 
-CREATE INDEX IF NOT EXISTS idx_tasks_parent_id ON tasks(parent_id);
-CREATE INDEX IF NOT EXISTS idx_tasks_updated_at ON tasks(updated_at);
-CREATE INDEX IF NOT EXISTS idx_tasks_is_deleted ON tasks(is_deleted);
-CREATE INDEX IF NOT EXISTS idx_tasks_is_pinned ON tasks(is_pinned);
-CREATE INDEX IF NOT EXISTS idx_tasks_deadline ON tasks(deadline);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_categories_name ON categories(name);
-CREATE INDEX IF NOT EXISTS idx_attachments_task_id ON attachments(task_id);
+## Checks
 
-INSERT INTO categories (id, name, color, is_default)
-VALUES (gen_random_uuid(), 'Uncategorized', '#9e9e9e', TRUE)
-ON CONFLICT (name) DO NOTHING;
+```bash
+cd Frontend
+flutter analyze
+flutter test
+```
 
-2) Alternatively, run the included script:
-- psql -d todo_db -f server/sql/bootstrap.sql
+Both run in CI on every push and pull request (`.github/workflows/ci.yml`).
 
-After that, start the server again. Migrations will continue to be applied safely with IF NOT EXISTS clauses.
+## Documentation
+
+The product specification — data model, soft delete, category lifecycle, subtask progress formula, sorting rules and UX ideas — is in [docs/product-spec.ru.md](docs/product-spec.ru.md) (in Russian).
