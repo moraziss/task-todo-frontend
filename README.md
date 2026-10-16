@@ -1,5 +1,7 @@
 # task-todo-frontend
 
+[![ci](https://github.com/moraziss/task-todo-frontend/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/moraziss/task-todo-frontend/actions/workflows/ci.yml)
+
 An offline-first to-do app built with Flutter. Tasks live in a local SQLite database, so the app works without a connection, and are synchronised with a Go + PostgreSQL backend when one is available.
 
 > Backend: [moraziss/task-todo-backend](https://github.com/moraziss/task-todo-backend)
