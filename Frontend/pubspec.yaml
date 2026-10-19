@@ -1,5 +1,5 @@
 name: task_todo
-description: "A Offline-First Todo App with Go backend."
+description: "An offline-first to-do app with a Go backend."
 publish_to: 'none'
 version: 1.0.0+1
 
